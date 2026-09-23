@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saarthi Product Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Inter,Arial,sans-serif;margin:0;background:#f5f7fb;color:#172033}
+header{background:#111827;color:#fff;padding:24px 6vw} header h1{margin:0 0 8px;font-size:30px}
+main{max-width:1250px;margin:24px auto;padding:0 20px} .tabs{display:flex;gap:8px;margin-bottom:20px}
+.tab{border:0;padding:12px 18px;border-radius:8px;cursor:pointer;font-size:15px} .active{background:#111827;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px} .card,.panel{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 10px #0000000b;margin-bottom:16px}
+.card b{font-size:25px;display:block;margin-top:8px} small{color:#6b7280}
+.note{background:#fff7ed;border-left:4px solid #f59e0b;padding:13px;margin:14px 0;border-radius:4px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px} .charts .panel{min-height:330px}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left} th{background:#f8fafc}
+.action{border-left:4px solid #111827;padding:14px;margin:14px 0;background:#fff;border-radius:4px} .hidden{display:none}
+@media(max-width:800px){.grid,.charts{grid-template-columns:1fr 1fr}} @media(max-width:560px){.grid,.charts{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><h1>Saarthi Product Overview</h1><div>Assessment period: 1 Mar–31 Aug 2026</div></header>
+<main>
+<div class="tabs"><button id="t1" class="tab active">Overview</button><button id="t2" class="tab">What I'd do about it</button></div>
+<section id="overview">
+<div class="grid">
+<div class="card">Users<b>50,000</b><small>Clean users table</small></div>
+<div class="card">Sessions<b>50,921</b><small>chat_started sessions</small></div>
+<div class="card">Net revenue<b>₹1,219,843</b><small>Mar–Aug 2026</small></div>
+<div class="card">Payment success<b>7.9%</b><small>4,044 / 50,921 sessions</small></div>
+</div>
+<div class="note"><b>Data reliability:</b> 9 refund events are dated after 31 Aug 2026 and are retained for lifecycle completeness but excluded from the Mar–Aug revenue KPI. Missing event user IDs were repaired using an unambiguous session-to-user mapping. Campaign names and profile-completion event labels were normalized in Python. Dashboard values are based on the BigQuery analysis queries run for this assessment.</div>
+<div class="charts">
+<div class="panel"><h3>Saarthi Session Funnel — Mar–Aug 2026</h3><canvas id="funnel"></canvas></div>
+<div class="panel"><h3>Monthly Net Revenue — Mar–Aug 2026</h3><canvas id="revenueChart"></canvas></div>
+<div class="panel"><h3>Acquisition Channel Performance — Mar–Aug 2026</h3><canvas id="channelChart"></canvas></div>
+<div class="panel"><h3>LLM Cost by Session Type — Mar–Aug 2026</h3><canvas id="costChart"></canvas></div>
+</div>
+<div class="panel"><h3>Meta Campaign Performance — Mar–Aug 2026</h3>
+<table><thead><tr><th>Campaign</th><th>Users</th><th>Spend</th><th>Net revenue</th><th>CAC</th><th>ROAS</th><th>Payer rate</th></tr></thead><tbody id="campaignBody"></tbody></table></div>
+<div class="panel"><h3>Weekly Retention Cohort — Mar–Aug 2026</h3>
+<table><thead><tr><th>Cohort</th><th>W0</th><th>W1</th><th>W2</th><th>W3</th><th>W4</th></tr></thead><tbody id="retBody"></tbody></table></div>
+</section>
+<section id="actions" class="hidden">
+<div class="action"><h3>1. Test the paywall → payment initiation step</h3>
+<p><b>Evidence:</b> 18,706 sessions saw the paywall and 5,693 initiated payment, a 30.4% initiation rate.</p>
+<p><b>Potential value:</b> A 5 percentage-point lift would create about 935 additional payment initiations. At the observed 71.0% initiation-to-success rate and ₹314.96 observed net revenue per successful payer, that is approximately <b>₹2.09 lakh</b> incremental net revenue.</p>
+<p><b>Condition:</b> Validate with an A/B test and confirm payment-success rate does not deteriorate.</p>
+<p><b>Would not do:</b> Scale acquisition spend solely on this data before testing the conversion step.</p></div>
+<div class="action"><h3>2. Run channel-specific onboarding tests</h3>
+<p><b>Evidence:</b> Web and WhatsApp show different volumes and payment conversion in the observed data.</p>
+<p><b>Potential value:</b> Size only after an experiment; observational channel differences do not establish causality.</p>
+<p><b>Condition:</b> Randomized within-channel tests should improve downstream payment conversion.</p>
+<p><b>Would not do:</b> Declare one channel inherently better from these observational results.</p></div>
+<div class="action"><h3>3. Investigate repeat usage before scaling retention spend</h3>
+<p><b>Evidence:</b> The weekly cohort table shows how quickly chat activity falls after acquisition.</p>
+<p><b>Potential value:</b> The supplied data does not establish the causal value of a retention intervention.</p>
+<p><b>Condition:</b> A product experiment must produce measurable incremental repeat sessions.</p>
+<p><b>Would not do:</b> Attribute retention differences to campaigns without an experiment.</p></div>
+<div class="note"><b>Assumption:</b> ₹314.96 is observed net revenue per successful payer (₹1,219,843 ÷ 3,873 unique successful gateway transactions) and is used only for illustrative sizing.</div>
+</section>
+</main>
+<script>
+const D={"funnel": [{"event_name": "chat_started", "event_count": 50921}, {"event_name": "profile_started", "event_count": 35521}, {"event_name": "profile_completed", "event_count": 20116}, {"event_name": "paywall_shown", "event_count": 18706}, {"event_name": "payment_initiated", "event_count": 5693}, {"event_name": "payment_success", "event_count": 4044}], "revenue": [{"month": "2026-03", "gross_revenue": 110887, "refunds": 5761, "net_revenue": 105126}, {"month": "2026-04", "gross_revenue": 149678, "refunds": 5259, "net_revenue": 144419}, {"month": "2026-05", "gross_revenue": 196719, "refunds": 7518, "net_revenue": 189201}, {"month": "2026-06", "gross_revenue": 213258, "refunds": 10766, "net_revenue": 202492}, {"month": "2026-07", "gross_revenue": 266018, "refunds": 14767, "net_revenue": 251251}, {"month": "2026-08", "gross_revenue": 339115, "refunds": 11761, "net_revenue": 327354}], "channels": [{"channel": "web", "users": 18197, "chat_started": 18197, "paid_users": 1283}, {"channel": "whatsapp", "users": 31803, "chat_started": 31803, "paid_users": 2076}], "campaigns": [{"campaign_name": "TA_Love_Retarget_Web", "acquired_users": 7016, "spend_inr": 164622.56, "net_revenue": 216461, "cac_inr": 23.46387685290764, "roas": 1.3148926854253755, "payer_rate": 0.09563854047890535}, {"campaign_name": "TA_Money_Interest_Web", "acquired_users": 6578, "spend_inr": 139092.21, "net_revenue": 165706, "cac_inr": 21.145060808756458, "roas": 1.191339184272074, "payer_rate": 0.07950744907266646}, {"campaign_name": "TA_Career_Broad_WA", "acquired_users": 11847, "spend_inr": 320522.9, "net_revenue": 376675, "cac_inr": 27.055195408120202, "roas": 1.1751890426549865, "payer_rate": 0.10019414197687178}, {"campaign_name": "TA_Marriage_Lookalike", "acquired_users": 9459, "spend_inr": 316251.6, "net_revenue": 299801, "cac_inr": 33.433935934031076, "roas": 0.9479825556613786, "payer_rate": 0.09895337773549001}, {"campaign_name": "TA_Generic_Astro_Wide", "acquired_users": 10497, "spend_inr": 96300.3, "net_revenue": 83125, "cac_inr": 9.174078308088026, "roas": 0.863185265258779, "payer_rate": 0.026102696008383348}, {"campaign_name": "TA_Festival_Push_App", "acquired_users": 4603, "spend_inr": 133419.8, "net_revenue": 78075, "cac_inr": 28.985400825548552, "roas": 0.585183008818781, "payer_rate": 0.061264392787312626}], "retention": [{"cohort_week": "2026-03-03", "w0": 0.17012448132780084, "w1": 0.004149377593360996, "w3": 0.002074688796680498, "w4": 0.0031120331950207467}, {"cohort_week": "2026-03-10", "w0": 0.132, "w1": 0.004, "w2": 0.001, "w3": 0.001, "w4": 0.005}, {"cohort_week": "2026-03-17", "w0": 0.15054744525547445, "w1": 0.0009124087591240876, "w2": 0.0036496350364963502, "w3": 0.0009124087591240876, "w4": 0.0009124087591240876}, {"cohort_week": "2026-03-24", "w0": 0.14042207792207792, "w1": 0.0016233766233766235, "w2": 0.002435064935064935, "w3": 0.002435064935064935, "w4": 0.0016233766233766235}, {"cohort_week": "2026-03-31", "w0": 0.14101592115238817, "w1": 0.0037907505686125853, "w2": 0.0037907505686125853, "w3": 0.000758150113722517, "w4": 0.003032600454890068}, {"cohort_week": "2026-04-07", "w0": 0.1380813953488372, "w1": 0.005813953488372093, "w2": 0.002180232558139535, "w3": 0.0014534883720930232, "w4": 0.0029069767441860465}, {"cohort_week": "2026-04-14", "w0": 0.15140845070422534, "w1": 0.0028169014084507044, "w3": 0.0035211267605633804, "w4": 0.0014084507042253522}, {"cohort_week": "2026-04-21", "w0": 0.1493032514930325, "w1": 0.0046449900464499, "w2": 0.0013271400132714001, "w3": 0.0019907100199071004, "w4": 0.0006635700066357001}, {"cohort_week": "2026-04-28", "w0": 0.1521598968407479, "w1": 0.0012894906511927789, "w2": 0.0025789813023855577, "w3": 0.003223726627981947, "w4": 0.0006447453255963894}, {"cohort_week": "2026-05-05", "w0": 0.14742451154529307, "w1": 0.002960331557134399, "w3": 0.0017761989342806395, "w4": 0.003552397868561279}, {"cohort_week": "2026-05-12", "w0": 0.13659078289838977, "w1": 0.00277623542476402, "w2": 0.00277623542476402, "w3": 0.000555247084952804, "w4": 0.001665741254858412}, {"cohort_week": "2026-05-19", "w0": 0.13994334277620396, "w1": 0.0005665722379603399, "w2": 0.0028328611898017, "w3": 0.0016997167138810198, "w4": 0.0005665722379603399}, {"cohort_week": "2026-05-26", "w0": 0.15567282321899736, "w1": 0.002638522427440633, "w2": 0.002638522427440633, "w3": 0.0010554089709762533, "w4": 0.0021108179419525065}, {"cohort_week": "2026-06-02", "w0": 0.13473360655737704, "w1": 0.0020491803278688526, "w2": 0.0025614754098360654, "w3": 0.0015368852459016393, "w4": 0.0020491803278688526}, {"cohort_week": "2026-06-09", "w0": 0.14831573655103067, "w1": 0.001005530417295123, "w2": 0.001005530417295123, "w3": 0.0015082956259426848, "w4": 0.002513826043237808}, {"cohort_week": "2026-06-16", "w0": 0.14448128848886785, "w1": 0.0004737091425864519, "w2": 0.0028422548555187117, "w3": 0.0018948365703458077, "w4": 0.0018948365703458077}, {"cohort_week": "2026-06-23", "w0": 0.14767932489451477, "w1": 0.0023441162681669013, "w2": 0.0014064697609001407, "w3": 0.0032817627754336614, "w4": 0.0014064697609001407}, {"cohort_week": "2026-06-30", "w0": 0.14347450302506481, "w1": 0.003457216940363008, "w2": 0.00216076058772688, "w3": 0.000864304235090752, "w4": 0.003025064822817632}, {"cohort_week": "2026-07-07", "w0": 0.14408233276157806, "w1": 0.003430531732418525, "w2": 0.001286449399656947, "w3": 0.003001715265866209, "w4": 0.0008576329331046312}, {"cohort_week": "2026-07-14", "w0": 0.13263598326359832, "w1": 0.002510460251046025, "w2": 0.0016736401673640166, "w3": 0.0020920502092050207, "w4": 0.00041841004184100416}, {"cohort_week": "2026-07-21", "w0": 0.14421881475341897, "w1": 0.0037297969332780773, "w2": 0.002900953170327393, "w3": 0.0012432656444260257, "w4": 0.0008288437629506838}, {"cohort_week": "2026-07-28", "w0": 0.14225297962322184, "w1": 0.00038446751249519417, "w2": 0.0011534025374855825, "w3": 0.0015378700499807767, "w4": 0.014225297962322183}, {"cohort_week": "2026-08-04", "w0": 0.15231289958631064, "w1": 0.0022564874012786762, "w2": 0.003384731101918014, "w3": 0.010530274539300489}, {"cohort_week": "2026-08-11", "w0": 0.1452991452991453, "w1": 0.0007432181345224824, "w2": 0.013006317354143442}, {"cohort_week": "2026-08-18", "w0": 0.14376400298730396, "w1": 0.013816280806572068}, {"cohort_week": "2026-08-25", "w0": 0.15081853012887494}], "costs": [{"is_paid_session": false, "sessions": 46877, "total_cost_usd": 9749.913016, "avg_cost_per_session_usd": 0.20798927013247437}, {"is_paid_session": true, "sessions": 4044, "total_cost_usd": 2704.451311, "avg_cost_per_session_usd": 0.668756506181998}], "users": 50000, "sessions": 50921, "net_revenue": 1219843, "payers": 4044, "gross_total": 1275675, "refund_total": 55832, "post_refund_events": 9, "avg_net_per_payer": 314.96075393751613};
+const money=n=>'₹'+new Intl.NumberFormat('en-IN',{maximumFractionDigits:0}).format(n);
+const funnelLabels=['Chat started','Profile started','Profile completed','Paywall shown','Payment initiated','Payment success'];
+const funnelVals=D.funnel.map(x=>Number(x.event_count));
+new Chart(document.getElementById('funnel'),{type:'bar',data:{labels:funnelLabels,datasets:[{label:'Sessions',data:funnelVals}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+new Chart(document.getElementById('revenueChart'),{type:'line',data:{labels:D.revenue.map(x=>x.month),datasets:[{label:'Net revenue (₹)',data:D.revenue.map(x=>Number(x.net_revenue)),tension:.2}]},options:{responsive:true}});
+new Chart(document.getElementById('channelChart'),{type:'bar',data:{labels:D.channels.map(x=>x.channel),datasets:[{label:'Paid users',data:D.channels.map(x=>Number(x.paid_users))}]},options:{responsive:true}});
+new Chart(document.getElementById('costChart'),{type:'bar',data:{labels:D.costs.map(x=>x.is_paid_session?'Paid':'Free'),datasets:[{label:'Total cost (USD)',data:D.costs.map(x=>Number(x.total_cost_usd))}]},options:{responsive:true}});
+document.getElementById('campaignBody').innerHTML=D.campaigns.map(x=>`<tr><td>${x.campaign_name}</td><td>${Number(x.acquired_users).toLocaleString('en-IN')}</td><td>${money(x.spend_inr)}</td><td>${money(x.net_revenue)}</td><td>${money(x.cac_inr)}</td><td>${Number(x.roas).toFixed(2)}x</td><td>${(Number(x.payer_rate)*100).toFixed(1)}%</td></tr>`).join('');
+document.getElementById('retBody').innerHTML=D.retention.map(x=>`<tr><td>${x.cohort_week}</td><td>${x.w0!=null?(x.w0*100).toFixed(1)+'%':'—'}</td><td>${x.w1!=null?(x.w1*100).toFixed(1)+'%':'—'}</td><td>${x.w2!=null?(x.w2*100).toFixed(1)+'%':'—'}</td><td>${x.w3!=null?(x.w3*100).toFixed(1)+'%':'—'}</td><td>${x.w4!=null?(x.w4*100).toFixed(1)+'%':'—'}</td></tr>`).join('');
+t1.onclick=()=>{overview.classList.remove('hidden');actions.classList.add('hidden');t1.classList.add('active');t2.classList.remove('active')};
+t2.onclick=()=>{overview.classList.add('hidden');actions.classList.remove('hidden');t2.classList.add('active');t1.classList.remove('active')};
+</script></body></html>
